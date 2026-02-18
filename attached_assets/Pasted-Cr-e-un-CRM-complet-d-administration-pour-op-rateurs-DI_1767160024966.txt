@@ -1,0 +1,213 @@
+Crée un CRM complet d'administration pour opérateurs DIG TRAVEL, directement lié à l'application mobile en temps réel.
+
+IMPORTANT : Tout ce que l'opérateur modifie dans le panel admin doit se refléter INSTANTANÉMENT dans l'app mobile des clients. Même database PostgreSQL locale, zéro délai.
+
+═══════════════════════════════════════════════════════════
+
+PAGES DU CRM :
+
+1. DASHBOARD - Vue d'ensemble temps réel
+   - KPIs auto-refresh toutes les 10 secondes
+   - Réservations du jour en direct
+   - Graphiques CA
+   - Alertes automatiques
+
+2. ACTIVITÉS - CRUD Complet avec impact direct app mobile
+
+   LISTE ACTIVITÉS :
+   - Toutes les activités avec statut en temps réel
+   - Toggle rapide Active/Pause (impact immédiat app)
+   - Stats live par activité
+   - Bouton "Nouvelle activité"
+
+   CRÉER/MODIFIER ACTIVITÉ :
+   Form en tabs, TOUT est modifiable et se reflète direct dans l'app :
+
+   TAB Général :
+   - Titre, description, catégorie, ville, durée
+   
+   TAB Prix :
+   - Prix par personne (MODIFIABLE EN DIRECT)
+   - Prix groupe (paliers personnalisables)
+   - Réductions (enfants, étudiants, codes promo)
+   - Acompte requis (oui/non, montant/%)
+   
+   TAB Disponibilités :
+   - Jours disponibles (checkboxes)
+   - Horaires par jour (créneaux personnalisés)
+   - Capacité max par créneau
+   - Dates bloquées (calendrier)
+   - Délai réservation minimum
+   
+   TAB Photos :
+   - Upload/supprimer photos
+   - Réorganiser ordre
+   - Photo principale
+   
+   TAB Inclus/Exclus :
+   - Listes modifiables
+   
+   TAB Point RDV :
+   - Adresse, carte Google Maps
+   - Instructions accès
+   
+   TAB Paiement :
+   - Modes acceptés :
+     ☐ Carte bancaire (Stripe) - ON/OFF
+     ☐ Cash sur place - ON/OFF
+     ☐ Virement bancaire - ON/OFF
+   - Si carte : configurer Stripe Connect
+   - Si cash : instructions pour client
+   - Acompte vs paiement complet
+   
+   TAB Statut :
+   - Brouillon (invisible app)
+   - Active (visible app immédiatement)
+   - Pause (grisée dans app avec "Indisponible")
+   - Archivée (disparaît app)
+
+   SAUVEGARDE :
+   - Bouton "Enregistrer" → Update DB → App mobile refresh automatiquement
+   - Prévisualisation : voir exactement comme client verra
+
+3. GESTION PRIX DYNAMIQUE
+
+   PAGE DÉDIÉE "Tarification" :
+   - Voir tous les prix de toutes les activités
+   - Modification en masse :
+     * Augmenter tous prix de X%
+     * Réduction temporaire (ex: -20% du 15 au 30 janvier)
+     * Prix selon saison (haute/basse)
+     * Happy hours (ex: -30% créneaux 14h-16h)
+   - Historique modifications prix
+   - Preview impact CA
+
+4. CALENDRIER DISPONIBILITÉS
+
+   - Vue mensuelle/hebdomadaire
+   - Voir toutes activités
+   - Clic sur créneau :
+     * Modifier capacité
+     * Bloquer/débloquer
+     * Voir réservations
+   - Blocage en masse (vacances, maintenance)
+   - Synchronisation instantanée avec app (créneaux bloqués = invisibles pour clients)
+
+5. RÉSERVATIONS - Gestion complète
+
+   - Tableau temps réel avec auto-refresh
+   - Filtres : date, statut, activité, paiement
+   - Actions :
+     * Voir détails
+     * Modifier date/heure (notif auto client)
+     * Annuler (remboursement auto si Stripe)
+     * Marquer complétée
+     * Envoyer rappel WhatsApp
+     * Télécharger reçu PDF
+   - QR codes : ON HOLD (fonctionnalité désactivée pour l'instant)
+   - Export Excel
+
+6. CLIENTS - Base données
+
+   - Liste clients avec historique
+   - Segments automatiques (VIP, Réguliers, Nouveaux)
+   - Envoi messages groupés WhatsApp
+   - Export liste
+
+7. STATISTIQUES
+
+   - CA par période/activité/ville
+   - Graphiques interactifs
+   - Taux conversion, panier moyen
+   - Top activités
+   - Export rapports
+
+8. FINANCES
+
+   - CA total, commissions DIG TRAVEL (12%)
+   - Paiements reçus/en attente
+   - Factures auto-générées
+   - Tableau transactions détaillé
+   - Export comptable
+
+9. MESSAGES (optionnel V1)
+
+   - Inbox conversations
+   - Templates messages
+   - Réponses rapides
+
+10. PARAMÈTRES
+
+    - Profil opérateur (logo, description, contact)
+    - Configuration Stripe Connect
+    - Notifications (email, WhatsApp, son)
+    - Horaires par défaut
+    - Équipe & permissions
+
+═══════════════════════════════════════════════════════════
+
+INTÉGRATION APP MOBILE ↔ CRM :
+
+SYNCHRONISATION TEMPS RÉEL :
+
+1. Quand opérateur modifie prix activité :
+   - Update table activities en DB
+   - App mobile refetch automatiquement (polling ou websocket)
+   - Nouveau prix affiché instantanément
+
+2. Quand opérateur bloque des dates :
+   - Update table blocked_dates
+   - App mobile ne montre plus ces créneaux
+   - Si client sur page booking, message "Disponibilités mises à jour"
+
+3. Quand opérateur met activité en Pause :
+   - Colonne status = 'paused'
+   - App mobile affiche badge "Temporairement indisponible"
+   - Bouton "Réserver" désactivé
+
+4. Quand opérateur change modes paiement :
+   - Update payment_methods
+   - App mobile affiche uniquement options activées
+
+5. Quand opérateur modifie photos :
+   - App mobile recharge images
+   - Cache invalidé
+
+ENDPOINTS API PARTAGÉS :
+
+App mobile ET CRM utilisent mêmes endpoints :
+- GET /api/activities?city=Alger (filtre status='active' pour app, tous pour CRM)
+- GET /api/activities/:id (app voit version publique, CRM voit tout)
+- PATCH /api/activities/:id (CRM seulement)
+- POST /api/activities (CRM seulement)
+- GET /api/bookings (app filtre par user_id, CRM filtre par operator_id)
+
+PERMISSIONS :
+
+- Routes lecture : app mobile + CRM
+- Routes écriture (POST/PATCH/DELETE) : CRM seulement
+- Middleware vérifie JWT : user = lecture, operator = écriture
+
+═══════════════════════════════════════════════════════════
+
+MODIFICATIONS PRIX - Exemples concrets :
+
+SCÉNARIO 1 : Opérateur augmente prix Jet Ski de 1200 DZD → 1500 DZD
+1. Opérateur ouvre activité "Jet Ski" dans CRM
+2. Change prix : 1200 → 1500
+3. Clique "Enregistrer"
+4. Backend update : UPDATE activities SET price = 1500 WHERE id = 'xxx'
+5. App mobile client qui regarde cette activité :
+   - Polling toutes les 30 secondes OU websocket
+   - Détecte changement
+   - Affiche 1,500 DZD au lieu de 1,200 DZD
+   - Animation subtile pour indiquer mise à jour
+
+SCÉNARIO 2 : Opérateur crée réduction -20% week-end
+1. CRM : page Tarification → Créer règle
+2. Règle : "Samedi-Dimanche, -20% sur Jet Ski"
+3. Save → table pricing_rules
+4. App mobile : samedi, affiche Jet Ski à 1,200 DZD (au lieu de 1,500)
+5. Badge "Offre week-end -20%"
+
+SCÉNARIO 3 : Opérateur bloque 25-31 décembre (v

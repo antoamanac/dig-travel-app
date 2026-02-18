@@ -1,0 +1,101 @@
+{
+  "id": "720f9fae-0236-48e1-82aa-4b4451b28838",
+  "createdAt": "2026-02-15T19:51:45.351Z",
+  "runtimeVersion": "exposdk:54.0.0",
+  "launchAsset": {
+    "key": "bundle-1771185105351-889",
+    "contentType": "application/javascript",
+    "url": "https://57695de8-dbd3-4c9f-ac10-c1359d0ffc2f-00-16fe5f515ivw6.picard.replit.dev/1771185105351-889/_expo/static/js/android/bundle.js"
+  },
+  "assets": [],
+  "metadata": {},
+  "extra": {
+    "eas": {},
+    "expoClient": {
+      "name": "DIG TRAVEL",
+      "slug": "dig-travel",
+      "version": "1.0.0",
+      "orientation": "portrait",
+      "icon": "./assets/images/icon.png",
+      "scheme": "digtravel",
+      "userInterfaceStyle": "automatic",
+      "newArchEnabled": true,
+      "ios": {
+        "supportsTablet": true,
+        "bundleIdentifier": "com.digtravel.app"
+      },
+      "android": {
+        "adaptiveIcon": {
+          "backgroundColor": "#1a1a2e",
+          "foregroundImage": "./assets/images/icon.png",
+          "foregroundImageUrl": "https://57695de8-dbd3-4c9f-ac10-c1359d0ffc2f-00-16fe5f515ivw6.picard.replit.dev/assets/./assets/images/icon.png"
+        },
+        "edgeToEdgeEnabled": true,
+        "predictiveBackGestureEnabled": false,
+        "package": "com.digtravel.app"
+      },
+      "web": {
+        "output": "single",
+        "favicon": "./assets/images/favicon.png"
+      },
+      "plugins": [
+        [
+          "expo-splash-screen",
+          {
+            "image": "./assets/images/splash-icon.png",
+            "imageWidth": 200,
+            "resizeMode": "contain",
+            "backgroundColor": "#1a1a2e",
+            "dark": {
+              "backgroundColor": "#1a1a2e"
+            }
+          }
+        ],
+        "expo-web-browser"
+      ],
+      "experiments": {
+        "reactCompiler": true
+      },
+      "_internal": {
+        "isDebug": false,
+        "projectRoot": "/home/runner/workspace",
+        "dynamicConfigPath": {},
+        "staticConfigPath": "/home/runner/workspace/app.json",
+        "packageJsonPath": "/home/runner/workspace/package.json",
+        "pluginHistory": {
+          "expo-splash-screen": {
+            "name": "expo-splash-screen",
+            "version": "31.0.11"
+          },
+          "expo-web-browser": {
+            "name": "expo-web-browser",
+            "version": "15.0.9"
+          }
+        }
+      },
+      "sdkVersion": "54.0.0",
+      "platforms": [
+        "ios",
+        "android",
+        "web"
+      ],
+      "androidStatusBar": {
+        "backgroundColor": "#1a1a2e"
+      },
+      "iconUrl": "https://57695de8-dbd3-4c9f-ac10-c1359d0ffc2f-00-16fe5f515ivw6.picard.replit.dev/assets/./assets/images/icon.png",
+      "hostUri": "57695de8-dbd3-4c9f-ac10-c1359d0ffc2f-00-16fe5f515ivw6.picard.replit.dev/android"
+    },
+    "expoGo": {
+      "debuggerHost": "57695de8-dbd3-4c9f-ac10-c1359d0ffc2f-00-16fe5f515ivw6.picard.replit.dev/android",
+      "developer": {
+        "tool": "expo-cli",
+        "projectRoot": "/home/runner/workspace"
+      },
+      "packagerOpts": {
+        "dev": false
+      },
+      "mainModuleName": "client/index"
+    },
+    "scopeKey": "@anonymous/dig-travel-f13b6790-521f-485c-88f5-9ec1c04f3987"
+  }
+}

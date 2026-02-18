@@ -1,0 +1,167 @@
+Tu es un agent full-stack (React/Next.js ou React Native selon le projet). Ta mission : implémenter l’onboarding final de DIG TRAVEL avec le mode DIG PILOT, en respectant strictement le flow, l’UX et les règles ci-dessous.
+
+# Objectif
+- Rendre l’onboarding ultra fluide (max 6 écrans obligatoires avant génération)
+- Mettre en avant DIG PILOT (recommandé) sans forcer
+- Ajouter enfants (et âges conditionnels)
+- Rendre certains écrans optionnels (skippable) avec bouton "Passer" cohérent
+- Ajouter l’écran loading “wow” en étapes
+- Préparer une structure de données propre pour générer un itinéraire ensuite (même si l’algo n’est pas encore final)
+
+# Naming
+- Le nom de la feature est "DIG PILOT" (PAS "IA" dans le nom)
+- Dans les textes, on peut dire "propulsé par IA" si besoin, mais pas dans le naming UI principal.
+
+# Flow obligatoire (ordre strict)
+1) Screen: Welcome (Alger)
+   - 2 cartes cliquables:
+     A) "🧭 MODE LIBRE" — "Explorez à votre rythme"
+     B) "✈️ DIG PILOT" — "On s’occupe de tout en 2 min" + badge "✨ RECOMMANDÉ"
+   - Toute la carte est cliquable, pas de bouton interne.
+
+2) Modal: DIG PILOT explanation (uniquement à la 1ère activation DIG PILOT)
+   - Condition: si (isFirstTimeUsingPilot === true) => show modal
+   - Sinon => toast discret "DIG PILOT activé ✈️" et on continue sans modal
+   - Modal copy:
+     Title: "✈️ DIG PILOT va créer votre planning parfait"
+     Bullets:
+       🗓️ Organiser votre séjour jour par jour
+       ⏰ Optimiser vos trajets (zéro temps perdu)
+       💰 Respecter votre budget
+       🎯 Sélectionner uniquement ce qui VOUS plaît
+     Footer: "⏱️ Ça prend 2 minutes."
+     CTA: "C’est parti 🚀"
+   - Stocker l’état "pilotSeen" en local (localStorage/AsyncStorage) + optionnel côté backend user profile si login.
+
+3) Screen: Dates + Personnes (fusionné)
+   - Inputs: startDate, endDate (date picker)
+   - Adults stepper: min 1
+   - Children stepper: min 0
+   - Si children > 0 => afficher choix d’âge par catégorie (multi):
+     - "0–3", "4–10", "11+"
+     (UI simple: chips ou select; demander seulement si children > 0)
+   - Afficher un résumé: "X jours à Alger" calculé automatiquement.
+
+4) Screen: Contexte émotionnel (skippable)
+   - Top-right: bouton secondaire "Passer"
+   - Titre: "🎭 Avec qui partez-vous ?"
+   - Sous-titre: "Optionnel – pour affiner votre voyage"
+   - 4 choix (cards):
+     - 💑 En couple
+     - 👨‍👩‍👧 En famille
+     - 🎉 Entre amis
+     - 🧘 En solo
+   - Si user appuie "Passer" => set travelContext = null et continuer.
+
+5) Screen: Préférences (1 seul écran, pas surchargé)
+   - Bloc A: "Rythme du séjour" (single choice)
+     - Relax (1–2)
+     - Équilibré (2–3) + badge "⭐"
+     - Intense (3–4)
+   - Bloc B: "Ce qui vous fait envie" (multi select, max 5 sélections)
+     - Culture, Nature, Mer & aventure, Gastronomie, Bien-être, Shopping, Hors des sentiers battus (badge ⭐)
+   - CTA: Suivant
+   - Validation: au moins 1 centre d’intérêt sélectionné (si tu juges nécessaire). Sinon autoriser en mettant un défaut.
+
+6) Screen: À éviter (OPTIONNEL + skippable en 1 tap)
+   - Top-right: "Passer"
+   - Checkboxes max 4:
+     - Foules de touristes
+     - Trop de marche
+     - Réveils trop tôt (aucune activité avant 9h30)
+     - Restrictions alimentaires (champ texte)
+   - Pas de popup de confirmation. "Passer" doit avancer immédiatement.
+
+7) Screen: Budget
+   - Single choice:
+     - Économique ~50–80€/jour
+     - Modéré ~80–150€/jour (badge "⭐")
+     - Confort ~150–300€/jour
+   - Texte:
+     - "🔒 Votre budget est privé"
+     - "💡 DIG PILOT n’ira jamais au-delà"
+   - Stocker budgetTier + budgetRange.
+
+8) Screen: Transport (OPTIONNEL)
+   - Top-right: "Passer"
+   - Options (single choice):
+     - Je me débrouille seul
+     - Location de voiture
+     - Chauffeur privé
+     - Pas encore décidé (DIG PILOT recommandera)
+   - CTA final: "Générer mon planning ✨"
+
+9) Screen: Loading “wow” (6–8 secondes max)
+   - Title: "✈️ DIG PILOT prépare votre voyage…"
+   - Étapes affichées progressivement (animation):
+     1) "Analyse des activités à Alger…" => "✅ 247 activités analysées"
+     2) "Sélection des meilleures pour vous…" => "✅ 12 expériences sélectionnées"
+     3) "Optimisation des trajets…" => "✅ 3,2 km économisés"
+     4) "Vérification du budget…" => "✅ Budget OK (dans votre limite ✓)"
+     5) "Ajout de spots locaux…" => "✅ 2 lieux hors radar 🤫"
+     6) "🎉 Votre séjour est prêt !"
+   - Button: "Voir mon planning →"
+
+10) Screen: Résultat planning (MVP)
+   - Pour l’instant, afficher un planning mock cohérent (3 jours) + résumé des choix.
+   - Ajouter 3 chips d’ajustement:
+     - "😌 Plus relax"
+     - "🔥 Plus intense"
+     - "💰 Moins cher"
+   - Ces chips peuvent recalculer un mock pour l’instant (ou juste log).
+
+# UX Règles strictes
+- Tous les écrans optionnels ont "Passer" (secondaire), visible sans scroll.
+- "Passer" en haut à droite partout (cohérence).
+- Aucun écran ne doit être trop chargé: max 2 blocs principaux.
+- L’onboarding doit être navigable en arrière (back) sans perdre toutes les données.
+- Sauvegarder le progrès en local (draft) pour reprendre si l’app ferme.
+
+# Data Model (à préparer)
+Crée un objet "TripPlanRequest" généré à la fin de l’onboarding:
+{
+  destination: "Alger",
+  mode: "FREE" | "PILOT",
+  startDate,
+  endDate,
+  durationDays,
+  travelers: { adults, children, childrenAgeGroups?: string[] },
+  context: "COUPLE"|"FAMILY"|"FRIENDS"|"SOLO"|null,
+  pace: "RELAX"|"BALANCED"|"INTENSE",
+  interests: string[],
+  avoid?: {
+    crowds?: boolean,
+    tooMuchWalking?: boolean,
+    earlyWakeups?: boolean,
+    dietary?: string|null
+  },
+  budgetTier: "ECONOMY"|"MODERATE"|"COMFORT",
+  transport?: "SELF"|"CAR_RENTAL"|"DRIVER"|"UNSURE"|null
+}
+
+Stocker ce draft localement + optionnel /api/trip/draft POST si backend existe.
+
+# Instrumentation (analytics minimal)
+Ajoute des events (console ou analytics service):
+- onboarding_start
+- select_mode_free / select_mode_pilot
+- pilot_modal_shown
+- dates_people_completed
+- context_skipped / context_selected
+- preferences_completed
+- avoid_skipped / avoid_completed
+- budget_selected
+- transport_skipped / transport_selected
+- generate_clicked
+- planning_viewed
+
+# Output attendu
+- Code propre, composants réutilisables, navigation stable
+- Pas de breaking changes sur le reste de l’app
+- Un PR/commit clair + notes sur où modifier les textes
+
+Commence par me montrer:
+1) l’arborescence des fichiers modifiés/créés
+2) les composants écrans créés
+3) les changements de navigation
+Puis implémente.

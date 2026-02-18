@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DIG TRAVEL - Panel Opérateur</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .sidebar { transition: width 0.3s ease; }
+    .stat-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 10px 40px rgba(0,0,0,0.15); }
+    .status-badge { padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 500; }
+    .status-confirmed { background: #dcfce7; color: #166534; }
+    .status-pending { background: #fef3c7; color: #92400e; }
+    .status-completed { background: #dbeafe; color: #1e40af; }
+    .status-cancelled { background: #fee2e2; color: #991b1b; }
+    .status-refused { background: #fce4ec; color: #c62828; }
+    .activity-status-active { background: #dcfce7; color: #166534; }
+    .activity-status-paused { background: #fef3c7; color: #92400e; }
+    .activity-status-draft { background: #e5e7eb; color: #374151; }
+    .activity-status-archived { background: #fee2e2; color: #991b1b; }
+    .nav-item { transition: all 0.2s ease; }
+    .nav-item:hover { background: rgba(135, 206, 235, 0.1); }
+    .nav-item.active { background: rgba(135, 206, 235, 0.2); border-left: 3px solid #00D9C0; }
+    .modal-overlay { background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+    .table-row { transition: background 0.15s ease; }
+    .table-row:hover { background: #f8fafc; }
+    .btn-primary { background: #00D9C0; color: #071A1A; }
+    .btn-primary:hover { background: #6eb8d9; }
+    .input-field { border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; }
+    .input-field:focus { outline: none; border-color: #00D9C0; box-shadow: 0 0 0 3px rgba(135,206,235,0.2); }
+    .refresh-spin { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .notif-dropdown { max-height: 400px; overflow-y: auto; }
+    .notif-item { transition: background 0.15s ease; }
+    .notif-item:hover { background: #f0fdfa; }
+    .notif-unread { background: #f0fdfa; border-left: 3px solid #00D9C0; }
+    .tab-btn { padding: 10px 20px; font-size: 14px; font-weight: 500; border-bottom: 2px solid transparent; color: #6b7280; cursor: pointer; }
+    .tab-btn.active { color: #071A1A; border-bottom-color: #00D9C0; }
+    .tab-btn:hover { color: #071A1A; }
+
+    @media (max-width: 768px) {
+      .sidebar { position: fixed; z-index: 50; width: 280px !important; transform: translateX(-100%); }
+      .sidebar.mobile-open { transform: translateX(0); }
+      .mobile-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 40; }
+      .sidebar.mobile-open + .mobile-overlay { display: block; }
+      .main-content { margin-left: 0 !important; }
+      .stat-grid { grid-template-columns: repeat(2, 1fr) !important; }
+      .table-container { overflow-x: auto; }
+      .hide-mobile { display: none !important; }
+      .mobile-menu-btn { display: flex !important; }
+    }
+    @media (min-width: 769px) {
+      .mobile-menu-btn { display: none !important; }
+      .mobile-overlay { display: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <div id="app" class="flex min-h-screen">
+    <div id="login-page" class="hidden w-full min-h-screen flex items-center justify-center bg-gradient-to-br from-[#071A1A] to-[#0d2e2e]">
+      <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        <div class="text-center mb-8">
+          <div class="w-16 h-16 bg-[#00D9C0] rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <i data-lucide="plane" class="w-8 h-8 text-[#071A1A]"></i>
+          </div>
+          <h1 class="text-2xl font-bold text-[#071A1A]">DIG TRAVEL</h1>
+          <p class="text-gray-500 mt-1">Panel Opérateur</p>
+        </div>
+        <form id="login-form" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Identifiant</label>
+            <input type="text" id="login-email" class="input-field w-full" placeholder="phuketforyou" required>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
+            <input type="password" id="login-password" class="input-field w-full" placeholder="••••••••" required>
+          </div>
+          <div id="login-error" class="hidden text-red-500 text-sm text-center"></div>
+          <button type="submit" class="btn-primary w-full py-3 rounded-xl font-semibold transition-colors">
+            Se connecter
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <aside id="sidebar" class="sidebar w-64 bg-[#071A1A] text-white flex-shrink-0 hidden">
+      <div class="p-6 border-b border-white/10">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-[#00D9C0] rounded-xl flex items-center justify-center">
+            <i data-lucide="plane" class="w-5 h-5 text-[#071A1A]"></i>
+          </div>
+          <div>
+            <h1 class="font-bold text-lg">DIG TRAVEL</h1>
+            <p class="text-xs text-gray-400">Panel Opérateur</p>
+          </div>
+        </div>
+      </div>
+      
+      <nav class="p-4 space-y-1">
+        <a href="#dashboard" onclick="closeMobileMenu()" class="nav-item active flex items-center gap-3 px-4 py-3 rounded-lg text-white/80 hover:text-white">
+          <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="#activities" onclick="closeMobileMenu()" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-white/80 hover:text-white">
+          <i data-lucide="compass" class="w-5 h-5"></i>
+          <span>Activités</span>
+        </a>
+        <a href="#bookings" onclick="closeMobileMenu()" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-white/80 hover:text-white">
+          <i data-lucide="calendar" class="w-5 h-5"></i>
+          <span>Réservations</span>
+        </a>
+        <a href="#clients" onclick="closeMobileMenu()" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-white/80 hover:text-white">
+          <i data-lucide="users" class="w-5 h-5"></i>
+          <span>Clients</span>
+        </a>
+        <a href="#stats" onclick="closeMobileMenu()" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-white/80 hover:text-white">
+          <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+          <span>Statistiques</span>
+        </a>
+        <a href="#settings" onclick="closeMobileMenu()" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-white/80 hover:text-white">
+          <i data-lucide="settings" class="w-5 h-5"></i>
+          <span>Paramètres</span>
+        </a>
+      </nav>
+      
+      <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
+        <div class="flex items-center gap-3 px-4 py-2">
+          <div class="w-10 h-10 bg-[#00D9C0]/20 rounded-full flex items-center justify-center">
+            <i data-lucide="user" class="w-5 h-5 text-[#00D9C0]"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p id="operator-name" class="text-sm font-medium truncate">Opérateur</p>
+            <p id="operator-email" class="text-xs text-gray-400 truncate">email@example.com</p>
+          </div>
+          <button id="logout-btn" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
+            <i data-lucide="log-out" class="w-4 h-4 text-gray-400"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <div id="mobile-overlay" class="mobile-overlay" onclick="toggleMobileMenu()"></div>
+    
+    <main id="main-content" class="main-content flex-1 hidden">
+      <header class="bg-white border-b border-gray-200 px-4 md:px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <button id="mobile-menu-btn" class="mobile-menu-btn p-2 rounded-lg bg-gray-100 hover:bg-gray-200" onclick="toggleMobileMenu()">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+          </button>
+          <div>
+            <h2 id="page-title" class="text-lg md:text-xl font-semibold text-gray-800">Dashboard</h2>
+            <p id="page-subtitle" class="text-xs md:text-sm text-gray-500">Vue d'ensemble de votre activité</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 md:gap-4">
+          <div class="relative">
+            <button id="notif-bell-btn" onclick="toggleNotifDropdown()" class="relative p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+              <i data-lucide="bell" class="w-5 h-5 text-gray-600"></i>
+              <span id="notif-badge" class="hidden absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">0</span>
+            </button>
+            <div id="notif-dropdown" class="hidden absolute right-0 top-12 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 z-50">
+              <div class="p-4 border-b border-gray-100 flex items-center justify-between">
+                <h4 class="font-semibold text-gray-800">Notifications</h4>
+                <button onclick="markAllNotifRead()" class="text-xs text-[#00D9C0] hover:underline">Tout marquer lu</button>
+              </div>
+              <div id="notif-list" class="notif-dropdown">
+                <div class="p-6 text-center text-gray-400 text-sm">Aucune notification</div>
+              </div>
+            </div>
+          </div>
+          <button id="refresh-btn" class="flex items-center gap-1 md:gap-2 px-3 md:px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+            <i data-lucide="refresh-cw" class="w-4 h-4" id="refresh-icon"></i>
+            <span class="text-sm hidden md:inline">Actualiser</span>
+          </button>
+          <div class="text-xs md:text-sm text-gray-500 hidden md:block">
+            MAJ: <span id="last-update">--:--</span>
+          </div>
+        </div>
+      </header>
+
+      <div id="page-content" class="p-6">
+      </div>
+    </main>
+  </div>
+
+  <div id="modal-container"></div>
+
+  <script>
+    const API_BASE = '/api';
+    let authToken = localStorage.getItem('operator_token');
+    let currentOperator = null;
+    let autoRefreshInterval = null;
+    let notifPollInterval = null;
+    let notificationsCache = [];
+
+    async function apiRequest(endpoint, options = {}) {
+      const headers = { 'Content-Type': 'application/json', ...options.headers };
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      
+      const response = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
+      const data = await response.json();
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          logout();
+          throw new Error('Session expirée');
+        }
+        throw new Error(data.error || 'Erreur serveur');
+      }
+      
+      return data;
+    }
+
+    async function login(email, password) {
+      const data = await apiRequest('/operator/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password })
+      });
+      
+      authToken = data.token;
+      currentOperator = data.operator;
+      localStorage.setItem('operator_token', authToken);
+      
+      showDashboard();
+    }
+
+    function logout() {
+      authToken = null;
+      currentOperator = null;
+      localStorage.removeItem('operator_token');
+      if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+      if (notifPollInterval) clearInterval(notifPollInterval);
+      showLogin();
+    }
+    
+    function toggleMobileMenu() {
+      const sidebar = document.getElementById('sidebar');
+      sidebar.classList.toggle('mobile-open');
+    }
+    
+    function closeMobileMenu() {
+      const sidebar = document.getElementById('sidebar');
+      sidebar.classList.remove('mobile-open');
+    }
+
+    async function checkSession() {
+      if (!authToken) return showLogin();
+      
+      try {
+        const data = await apiRequest('/operator/auth/session');
+        currentOperator = data.operator;
+        showDashboard();
+      } catch (e) {
+        showLogin();
+      }
+    }
+
+    function showLogin() {
+      document.getElementById('login-page').classList.remove('hidden');
+      document.getElementById('sidebar').classList.add('hidden');
+      document.getElementById('main-content').classList.add('hidden');
+      lucide.createIcons();
+    }
+
+    function showDashboard() {
+      document.getElementById('login-page').classList.add('hidden');
+      document.getElementById('sidebar').classList.remove('hidden');
+      document.getElementById('main-content').classList.remove('hidden');
+      
+      document.getElementById('operator-name').textContent = currentOperator?.companyName || 'Opérateur';
+      document.getElementById('operator-email').textContent = currentOperator?.email || '';
+      
+      lucide.createIcons();
+      navigateTo(window.location.hash || '#dashboard');
+      startAutoRefresh();
+      startNotifPolling();
+    }
+
+    function startAutoRefresh() {
+      if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+      autoRefreshInterval = setInterval(() => {
+        const hash = window.location.hash || '#dashboard';
+        if (hash === '#dashboard') loadDashboard();
+      }, 10000);
+    }
+
+    function updateLastUpdate() {
+      document.getElementById('last-update').textContent = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function navigateTo(hash) {
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.getAttribute('href') === hash) item.classList.add('active');
+      });
+      
+      window.location.hash = hash;
+      
+      switch (hash) {
+        case '#dashboard': loadDashboard(); break;
+        case '#activities': loadActivities(); break;
+        case '#bookings': loadBookings(); break;
+        case '#clients': loadClients(); break;
+        case '#stats': loadStats(); break;
+        case '#settings': loadSettings(); break;
+        default: loadDashboard();
+      }
+    }
+
+    // ==================== NOTIFICATIONS ====================
+    function startNotifPolling() {
+      loadNotifications();
+      if (notifPollInterval) clearInterval(notifPollInterval);
+      notifPollInterval = setInterval(loadNotifications, 15000);
+    }
+
+    async function loadNotifications() {
+      try {
+        const data = await apiRequest('/operator/notifications');
+        notificationsCache = data.notifications || data || [];
+        renderNotifBadge();
+      } catch (e) {
+        // silent
+      }
+    }
+
+    function renderNotifBadge() {
+      const unread = notificationsCache.filter(n => !n.is_read && !n.isRead).length;
+      const badge = document.getElementById('notif-badge');
+      if (unread > 0) {
+        badge.textContent = unread > 99 ? '99+' : unread;
+        badge.classList.remove('hidden');
+        badge.classList.add('flex');
+      } else {
+        badge.classList.add('hidden');
+        badge.classList.remove('flex');
+      }
+    }
+
+    function toggleNotifDropdown() {
+      const dd = document.getElementById('notif-dropdown');
+      dd.classList.toggle('hidden');
+      if (!dd.classList.contains('hidden')) {
+        renderNotifList();
+      }
+    }
+
+    function renderNotifList() {
+      const list = document.getElementById('notif-list');
+      if (notificationsCache.length === 0) {
+        list.innerHTML = '<div class="p-6 text-center text-gray-400 text-sm">Aucune notification</div>';
+        return;
+      }
+      list.innerHTML = notificationsCache.slice(0, 20).map(n => {
+        const isRead = n.is_read || n.isRead;
+        const date = n.created_at || n.createdAt;
+        return `
+          <div class="notif-item p-4 border-b border-gray-50 cursor-pointer ${isRead ? '' : 'notif-unread'}" onclick="markNotifRead('${n.id}')">
+            <div class="flex items-start gap-3">
+              <div class="w-8 h-8 rounded-full ${isRead ? 'bg-gray-100' : 'bg-[#00D9C0]/20'} flex items-center justify-center flex-shrink-0 mt-0.5">
+                <i data-lucide="bell" class="w-4 h-4 ${isRead ? 'text-gray-400' : 'text-[#00D9C0]'}"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-gray-800 ${isRead ? '' : 'font-semibold'}">${n.title || 'Notification'}</p>
+                <p class="text-xs text-gray-500 mt-0.5 line-clamp-2">${n.message || ''}</p>
+                <p class="text-xs text-gray-400 mt-1">${date ? formatDateTime(date) : ''}</p>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    async function markNotifRead(id) {
+      try {
+        await apiRequest(`/notifications/${id}/read`, { method: 'PATCH' });
+        const n = notificationsCache.find(x => x.id === id || x.id === parseInt(id));
+        if (n) { n.is_read = true; n.isRead = true; }
+        renderNotifBadge();
+        renderNotifList();
+      } catch (e) { /* silent */ }
+    }
+
+    async function markAllNotifRead() {
+      for (const n of notificationsCache.filter(x => !x.is_read && !x.isRead)) {
+        await markNotifRead(n.id);
+      }
+    }
+
+    document.addEventListener('click', (e) => {
+      const dd = document.getElementById('notif-dropdown');
+      const btn = document.getElementById('notif-bell-btn');
+      if (dd && btn && !dd.contains(e.target) && !btn.contains(e.target)) {
+        dd.classList.add('hidden');
+      }
+    });
+
+    function formatDateTime(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // ==================== DASHBOARD ====================
+    async function loadDashboard() {
+      document.getElementById('page-title').textContent = 'Dashboard';
+      document.getElementById('page-subtitle').textContent = 'Vue d\'ensemble de votre activité';
+      
+      const refreshIcon = document.getElementById('refresh-icon');
+      refreshIcon.classList.add('refresh-spin');
+      
+      try {
+        const data = await apiRequest('/operator/dashboard');
+        const { kpis, recentBookings } = data;
+        
+        document.getElementById('page-content').innerHTML = `
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="stat-card bg-white rounded-2xl p-6 shadow-sm">
+              <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                  <i data-lucide="calendar-check" class="w-6 h-6 text-blue-600"></i>
+                </div>
+                <span class="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded-full">Aujourd'hui</span>
+              </div>
+              <p class="text-3xl font-bold text-gray-800">${kpis.todayBookings}</p>
+              <p class="text-sm text-gray-500 mt-1">Réservations du jour</p>
+            </div>
+            
+            <div class="stat-card bg-white rounded-2xl p-6 shadow-sm">
+              <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                  <i data-lucide="banknote" class="w-6 h-6 text-green-600"></i>
+                </div>
+                <span class="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-full">Ce mois</span>
+              </div>
+              <p class="text-3xl font-bold text-gray-800">${formatCurrency(kpis.monthRevenue)}</p>
+              <p class="text-sm text-gray-500 mt-1">Chiffre d'affaires</p>
+            </div>
+            
+            <div class="stat-card bg-white rounded-2xl p-6 shadow-sm">
+              <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                  <i data-lucide="compass" class="w-6 h-6 text-purple-600"></i>
+                </div>
+              </div>
+              <p class="text-3xl font-bold text-gray-800">${kpis.activeActivities}</p>
+              <p class="text-sm text-gray-500 mt-1">Activités actives</p>
+            </div>
+            
+            <div class="stat-card bg-white rounded-2xl p-6 shadow-sm">
+              <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+                  <i data-lucide="clock" class="w-6 h-6 text-orange-600"></i>
+                </div>
+                ${kpis.pendingBookings > 0 ? '<span class="text-xs font-medium text-orange-600 bg-orange-100 px-2 py-1 rounded-full">Action requise</span>' : ''}
+              </div>
+              <p class="text-3xl font-bold text-gray-800">${kpis.pendingBookings}</p>
+              <p class="text-sm text-gray-500 mt-1">En attente</p>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div class="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm">
+              <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-gray-800">Réservations récentes</h3>
+                <a href="#bookings" class="text-sm text-[#00D9C0] hover:underline">Voir tout</a>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full">
+                  <thead>
+                    <tr class="text-left text-sm text-gray-500 border-b">
+                      <th class="pb-3 font-medium">Client</th>
+                      <th class="pb-3 font-medium">Activité</th>
+                      <th class="pb-3 font-medium">Date</th>
+                      <th class="pb-3 font-medium">Montant</th>
+                      <th class="pb-3 font-medium">Statut</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${recentBookings.length === 0 ? `
+                      <tr><td colspan="5" class="py-8 text-center text-gray-400">Aucune réservation récente</td></tr>
+                    ` : recentBookings.map(b => `
+                      <tr class="table-row border-b border-gray-100">
+                        <td class="py-4">
+                          <p class="font-medium text-gray-800">${b.customerName || 'Client'}</p>
+                          <p class="text-xs text-gray-400">${b.customerEmail || ''}</p>
+                        </td>
+                        <td class="py-4 text-sm text-gray-600">${b.activityTitle}</td>
+                        <td class="py-4 text-sm text-gray-600">${formatDate(b.scheduledAt)}</td>
+                        <td class="py-4 text-sm font-medium text-gray-800">${formatCurrency(b.totalPrice)} ${b.currency}</td>
+                        <td class="py-4"><span class="status-badge status-${b.status}">${translateStatus(b.status)}</span></td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            <div class="bg-white rounded-2xl p-6 shadow-sm">
+              <h3 class="text-lg font-semibold text-gray-800 mb-6">Résumé</h3>
+              <div class="space-y-4">
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <i data-lucide="calendar" class="w-5 h-5 text-blue-600"></i>
+                    </div>
+                    <span class="text-sm text-gray-600">Cette semaine</span>
+                  </div>
+                  <span class="font-semibold text-gray-800">${kpis.weekBookings}</span>
+                </div>
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                      <i data-lucide="trending-up" class="w-5 h-5 text-green-600"></i>
+                    </div>
+                    <span class="text-sm text-gray-600">CA semaine</span>
+                  </div>
+                  <span class="font-semibold text-gray-800">${formatCurrency(kpis.weekRevenue)}</span>
+                </div>
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <i data-lucide="users" class="w-5 h-5 text-purple-600"></i>
+                    </div>
+                    <span class="text-sm text-gray-600">Total réservations</span>
+                  </div>
+                  <span class="font-semibold text-gray-800">${kpis.totalBookings}</span>
+                </div>
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                      <i data-lucide="clock-4" class="w-5 h-5 text-orange-600"></i>
+                    </div>
+                    <span class="text-sm text-gray-600">À venir</span>
+                  </div>
+                  <span class="font-semibold text-gray-800">${kpis.upcomingBookings}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        lucide.createIcons();
+        updateLastUpdate();
+      } catch (error) {
+        console.error('Dashboard error:', error);
+        document.getElementById('page-content').innerHTML = `
+          <div class="bg-red-50 text-red-600 p-4 rounded-xl">
+            Erreur lors du chargement du dashboard: ${error.message}
+          </div>
+        `;
+      } finally {
+        refreshIcon.classList.remove('refresh-spin');
+      }
+    }
+
+    // ==================== ACTIVITIES ====================
+    async function loadActivities() {
+      document.getElementById('page-title').textContent = 'Activités';
+      document.getElementById('page-subtitle').textContent = 'Gérez vos activités et leurs disponibilités';
+      
+      try {
+        const data = await apiRequest('/activities');
+        const activities = data.activities || [];
+        
+        document.getElementById('page-content').innerHTML = `
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-4">
+              <select id="filter-status" class="input-field text-sm">
+                <option value="">Tous les statuts</option>
+                <option value="active">Actives</option>
+                <option value="paused">En pause</option>
+                <option value="draft">Brouillons</option>
+                <option value="archived">Archivées</option>
+              </select>
+              <select id="filter-city" class="input-field text-sm">
+                <option value="">Toutes les villes</option>
+                <option value="alger">Alger</option>
+                <option value="dubai">Dubai</option>
+                <option value="losangeles">Los Angeles</option>
+                <option value="phuket">Phuket</option>
+                <option value="marrakech">Marrakech</option>
+              </select>
+            </div>
+            <button onclick="showActivityModal()" class="btn-primary px-4 py-2 rounded-xl font-medium flex items-center gap-2">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              Nouvelle activité
+            </button>
+          </div>
+          
+          <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <table class="w-full">
+              <thead class="bg-gray-50">
+                <tr class="text-left text-sm text-gray-500">
+                  <th class="px-6 py-4 font-medium">Activité</th>
+                  <th class="px-6 py-4 font-medium">Ville</th>
+                  <th class="px-6 py-4 font-medium">Prix</th>
+                  <th class="px-6 py-4 font-medium">Catégorie</th>
+                  <th class="px-6 py-4 font-medium">Statut</th>
+                  <th class="px-6 py-4 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${activities.length === 0 ? `
+                  <tr><td colspan="6" class="px-6 py-12 text-center text-gray-400">
+                    <div class="flex flex-col items-center">
+                      <i data-lucide="compass" class="w-12 h-12 text-gray-300 mb-3"></i>
+                      <p>Aucune activité trouvée</p>
+                      <button onclick="showActivityModal()" class="mt-4 text-[#00D9C0] hover:underline">Créer votre première activité</button>
+                    </div>
+                  </td></tr>
+                ` : activities.map(a => `
+                  <tr class="table-row border-t border-gray-100">
+                    <td class="px-6 py-4">
+                      <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                          ${a.images?.[0] ? `<img src="${a.images[0]}" class="w-full h-full object-cover">` : '<i data-lucide="image" class="w-5 h-5 text-gray-400"></i>'}
+                        </div>
+                        <div>
+                          <p class="font-medium text-gray-800">${a.title}</p>
+                          <p class="text-xs text-gray-400">${a.duration || ''}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600 capitalize">${a.cityId}</td>
+                    <td class="px-6 py-4 text-sm font-medium text-gray-800">${formatCurrency(a.price)} ${a.currency}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600 capitalize">${a.category}</td>
+                    <td class="px-6 py-4">
+                      <span class="status-badge activity-status-${a.status}">${translateActivityStatus(a.status)}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                      <div class="flex items-center gap-2">
+                        <button onclick="showActivityModal('${a.id}')" class="p-2 hover:bg-gray-100 rounded-lg" title="Modifier">
+                          <i data-lucide="edit-2" class="w-4 h-4 text-gray-500"></i>
+                        </button>
+                        <button onclick="toggleActivityStatus('${a.id}', '${a.status}')" class="p-2 hover:bg-gray-100 rounded-lg" title="${a.status === 'active' ? 'Mettre en pause' : 'Activer'}">
+                          <i data-lucide="${a.status === 'active' ? 'pause' : 'play'}" class="w-4 h-4 text-gray-500"></i>
+                        </button>
+                        <button onclick="deleteActivity('${a.id}')" class="p-2 hover:bg-red-50 rounded-lg" title="Supprimer">
+                          <i data-lucide="trash-2" class="w-4 h-4 text-red-500"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+        
+        lucide.createIcons();
+      } catch (error) {
+        console.error('Activities error:', error);
+        document.getElementById('page-content').innerHTML = `
+          <div class="bg-red-50 text-red-600 p-4 rounded-xl">Erreur: ${error.message}</div>
+        `;
+      }
+    }
+
+    // ==================== BOOKINGS ====================
+    async function loadBookings() {
+      document.getElementById('page-title').textContent = 'Réservations';
+      document.getElementById('page-subtitle').textContent = 'Gérez toutes vos réservations';
+      
+      try {
+        const data = await apiRequest('/operator/bookings');
+        const bookings = data.bookings || [];
+        
+        document.getElementById('page-content').innerHTML = `
+          <div class="flex items-center gap-4 mb-6">
+            <select id="filter-booking-status" class="input-field text-sm">
+              <option value="">Tous les statuts</option>
+              <option value="confirmed">Confirmées</option>
+              <option value="pending">En attente</option>
+              <option value="completed">Terminées</option>
+              <option value="cancelled">Annulées</option>
+              <option value="refused">Refusées</option>
+            </select>
+            <input type="date" id="filter-date-from" class="input-field text-sm" placeholder="Du">
+            <input type="date" id="filter-date-to" class="input-field text-sm" placeholder="Au">
+          </div>
+          
+          <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <table class="w-full">
+              <thead class="bg-gray-50">
+                <tr class="text-left text-sm text-gray-500">
+                  <th class="px-6 py-4 font-medium">ID</th>
+                  <th class="px-6 py-4 font-medium">Client</th>
+                  <th class="px-6 py-4 font-medium">Activité</th>
+                  <th class="px-6 py-4 font-medium">Date prévue</th>
+                  <th class="px-6 py-4 font-medium">Personnes</th>
+                  <th class="px-6 py-4 font-medium">Montant</th>
+                  <th class="px-6 py-4 font-medium">Statut</th>
+                  <th class="px-6 py-4 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${bookings.length === 0 ? `
+                  <tr><td colspan="8" class="px-6 py-12 text-center text-gray-400">
+                    <div class="flex flex-col items-center">
+                      <i data-lucide="calendar" class="w-12 h-12 text-gray-300 mb-3"></i>
+                      <p>Aucune réservation</p>
+                    </div>
+                  </td></tr>
+                ` : bookings.map(b => `
+                  <tr class="table-row border-t border-gray-100">
+                    <td class="px-6 py-4 text-sm text-gray-500 font-mono">${b.id.substring(0, 8)}...</td>
+                    <td class="px-6 py-4">
+                      <p class="font-medium text-gray-800">${b.customerName || 'Client'}</p>
+                      <p class="text-xs text-gray-400">${b.customerEmail || ''}</p>
+                      <p class="text-xs text-gray-400">${b.customerPhone || ''}</p>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-600">${b.activityTitle}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">${formatDate(b.scheduledAt)}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">${b.numPeople || 1}</td>
+                    <td class="px-6 py-4 text-sm font-medium text-gray-800">${formatCurrency(b.totalPrice)} ${b.currency}</td>
+                    <td class="px-6 py-4"><span class="status-badge status-${b.status}">${translateStatus(b.status)}</span></td>
+                    <td class="px-6 py-4">
+                      <div class="flex items-center gap-1">
+                        <button onclick="showBookingDetails('${b.id}')" class="p-2 hover:bg-gray-100 rounded-lg" title="Détails">
+                          <i data-lucide="eye" class="w-4 h-4 text-gray-500"></i>
+                        </button>
+                        ${b.status === 'pending' ? `
+                          <button onclick="updateBooking('${b.id}', 'confirmed')" class="p-2 hover:bg-green-50 rounded-lg" title="Confirmer">
+                            <i data-lucide="check" class="w-4 h-4 text-green-500"></i>
+                          </button>
+                          <button onclick="showRefuseModal('${b.id}')" class="p-2 hover:bg-red-50 rounded-lg" title="Refuser">
+                            <i data-lucide="x" class="w-4 h-4 text-red-500"></i>
+                          </button>
+                        ` : ''}
+                        ${b.status === 'confirmed' ? `
+                          <button onclick="updateBooking('${b.id}', 'completed')" class="p-2 hover:bg-blue-50 rounded-lg" title="Terminer">
+                            <i data-lucide="check-circle" class="w-4 h-4 text-blue-500"></i>
+                          </button>
+                          <button onclick="showRefuseModal('${b.id}')" class="p-2 hover:bg-red-50 rounded-lg" title="Refuser">
+                            <i data-lucide="x" class="w-4 h-4 text-red-500"></i>
+                          </button>
+                        ` : ''}
+                      </div>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+        
+        lucide.createIcons();
+      } catch (error) {
+        console.error('Bookings error:', error);
+        document.getElementById('page-content').innerHTML = `
+          <div class="bg-red-50 text-red-600 p-4 rounded-xl">Erreur: ${error.message}</div>
+        `;
+      }
+    }
+
+    // ==================== REFUSE MODAL ====================
+    function showRefuseModal(bookingId) {
+      document.getElementById('modal-container').innerHTML = `
+        <div class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="p-6 border-b border-gray-200 flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-gray-800">Refuser la réservation</h3>
+              <button onclick="closeModal()" class="p-2 hover:bg-gray-100 rounded-lg">
+                <i data-lucide="x" class="w-5 h-5 text-gray-500"></i>
+              </button>
+            </div>
+            <div class="p-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Motif du refus</label>
+              <textarea id="refuse-reason" class="input-field w-full" rows="4" placeholder="Indiquez la raison du refus..."></textarea>
+              <div class="flex justify-end gap-3 mt-4">
+                <button onclick="closeModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl">Annuler</button>
+                <button onclick="submitRefuse('${bookingId}')" class="px-6 py-2 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition-colors">Refuser</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    async function submitRefuse(bookingId) {
+      const reason = document.getElementById('refuse-reason').value.trim();
+      if (!reason) {
+        alert('Veuillez indiquer un motif de refus.');
+        return;
+      }
+      try {
+        await apiRequest(`/operator/bookings/${bookingId}/status`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'refused', reason })
+        });
+        closeModal();
+        loadBookings();
+      } catch (error) {
+        alert('Erreur: ' + error.message);
+      }
+    }
+
+    // ==================== BOOKING DETAILS MODAL ====================
+    async function showBookingDetails(bookingId) {
+      let booking;
+      try {
+        const data = await apiRequest('/operator/bookings');
+        const bookings = data.bookings || [];
+        booking = bookings.find(b => b.id === bookingId);
+        if (!booking) throw new Error('Réservation introuvable');
+      } catch (e) {
+        alert('Erreur: ' + e.message);
+        return;
+      }
+
+      const b = booking;
+      const statusBtns = buildBookingStatusButtons(b);
+
+      document.getElementById('modal-container').innerHTML = `
+        <div class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200 flex items-center justify-between">
+              <h3 class="text-xl font-semibold text-gray-800">Détails de la réservation</h3>
+              <button onclick="closeModal()" class="p-2 hover:bg-gray-100 rounded-lg">
+                <i data-lucide="x" class="w-5 h-5 text-gray-500"></i>
+              </button>
+            </div>
+            <div class="p-6 space-y-4">
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-500">ID</span>
+                <span class="text-sm font-mono text-gray-800">${b.id}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-500">Statut</span>
+                <span class="status-badge status-${b.status}">${translateStatus(b.status)}</span>
+              </div>
+              <hr class="border-gray-100">
+              <h4 class="text-sm font-semibold text-gray-700">Client</h4>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <p class="text-xs text-gray-400">Nom</p>
+                  <p class="text-sm text-gray-800">${b.customerName || '-'}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-400">Email</p>
+                  <p class="text-sm text-gray-800">${b.customerEmail || '-'}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-400">Téléphone</p>
+                  <p class="text-sm text-gray-800">${b.customerPhone || '-'}</p>
+                </div>
+              </div>
+              <hr class="border-gray-100">
+              <h4 class="text-sm font-semibold text-gray-700">Réservation</h4>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <p class="text-xs text-gray-400">Activité</p>
+                  <p class="text-sm text-gray-800">${b.activityTitle || '-'}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-400">Date prévue</p>
+                  <p class="text-sm text-gray-800">${formatDate(b.scheduledAt)}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-400">Créneau</p>
+                  <p class="text-sm text-gray-800">${b.timeSlot || b.time_slot || '-'}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-400">Personnes</p>
+                  <p class="text-sm text-gray-800">${b.numPeople || b.num_people || 1}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-400">Montant</p>
+                  <p class="text-sm font-semibold text-gray-800">${formatCurrency(b.totalPrice)} ${b.currency}</p>
+                </div>
+              </div>
+              ${b.operatorReason || b.operator_reason ? `
+                <hr class="border-gray-100">
+                <div>
+                  <p class="text-xs text-gray-400">Motif opérateur</p>
+                  <p class="text-sm text-gray-800 bg-red-50 p-3 rounded-lg mt-1">${b.operatorReason || b.operator_reason}</p>
+                </div>
+              ` : ''}
+              ${b.notes ? `
+                <hr class="border-gray-100">
+                <div>
+                  <p class="text-xs text-gray-400">Notes</p>
+                  <p class="text-sm text-gray-800 bg-gray-50 p-3 rounded-lg mt-1">${b.notes}</p>
+                </div>
+              ` : ''}
+              ${statusBtns ? `
+                <hr class="border-gray-100">
+                <div class="flex items-center gap-3">
+                  ${statusBtns}
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    function buildBookingStatusButtons(b) {
+      let btns = '';
+      if (b.status === 'pending') {
+        btns += `<button onclick="updateBookingFromModal('${b.id}', 'confirmed')" class="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-xl text-sm font-medium hover:bg-green-600"><i data-lucide="check" class="w-4 h-4"></i> Confirmer</button>`;
+        btns += `<button onclick="closeModal();showRefuseModal('${b.id}')" class="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-xl text-sm font-medium hover:bg-red-600"><i data-lucide="x" class="w-4 h-4"></i> Refuser</button>`;
+      }
+      if (b.status === 'confirmed') {
+        btns += `<button onclick="updateBookingFromModal('${b.id}', 'completed')" class="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-xl text-sm font-medium hover:bg-blue-600"><i data-lucide="check-circle" class="w-4 h-4"></i> Terminer</button>`;
+        btns += `<button onclick="closeModal();showRefuseModal('${b.id}')" class="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-xl text-sm font-medium hover:bg-red-600"><i data-lucide="x" class="w-4 h-4"></i> Refuser</button>`;
+      }
+      return btns;
+    }
+
+    async function updateBookingFromModal(id, status) {
+      try {
+        await apiRequest(`/operator/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
+        closeModal();
+        const hash = window.location.hash || '#dashboard';
+        if (hash === '#bookings') loadBookings();
+      } catch (error) {
+        alert('Erreur: ' + error.message);
+      }
+    }
+
+    // ==================== CLIENTS / STATS / SETTINGS ====================
+    function loadClients() {
+      document.getElementById('page-title').textContent = 'Clients';
+      document.getElementById('page-subtitle').textContent = 'Base de données clients';
+      document.getElementById('page-content').innerHTML = `
+        <div class="bg-white rounded-2xl p-12 shadow-sm text-center">
+          <i data-lucide="users" class="w-16 h-16 text-gray-300 mx-auto mb-4"></i>
+          <h3 class="text-xl font-semibold text-gray-800 mb-2">Gestion des clients</h3>
+          <p class="text-gray-500">Cette fonctionnalité sera disponible prochainement.</p>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    function loadStats() {
+      document.getElementById('page-title').textContent = 'Statistiques';
+      document.getElementById('page-subtitle').textContent = 'Analyses et rapports';
+      document.getElementById('page-content').innerHTML = `
+        <div class="bg-white rounded-2xl p-12 shadow-sm text-center">
+          <i data-lucide="bar-chart-3" class="w-16 h-16 text-gray-300 mx-auto mb-4"></i>
+          <h3 class="text-xl font-semibold text-gray-800 mb-2">Statistiques avancées</h3>
+          <p class="text-gray-500">Les graphiques et analyses détaillées seront disponibles prochainement.</p>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    function loadSettings() {
+      document.getElementById('page-title').textContent = 'Paramètres';
+      document.getElementById('page-subtitle').textContent = 'Configuration de votre compte';
+      
+      document.getElementById('page-content').innerHTML = `
+        <div class="max-w-2xl">
+          <div class="bg-white rounded-2xl p-6 shadow-sm mb-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Profil opérateur</h3>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nom de l'entreprise</label>
+                <input type="text" class="input-field w-full" value="${currentOperator?.companyName || ''}" disabled>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input type="email" class="input-field w-full" value="${currentOperator?.email || ''}" disabled>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
+                <input type="tel" class="input-field w-full" value="${currentOperator?.phone || ''}" placeholder="Non renseigné">
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-white rounded-2xl p-6 shadow-sm">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Taux de commission DIG TRAVEL</h3>
+            <div class="flex items-center gap-4">
+              <div class="w-24 h-24 bg-[#00D9C0]/10 rounded-2xl flex items-center justify-center">
+                <span class="text-3xl font-bold text-[#071A1A]">${currentOperator?.commissionRate || 12}%</span>
+              </div>
+              <p class="text-gray-500 text-sm">Commission prélevée sur chaque réservation</p>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // ==================== ACTIVITY MODAL WITH AVAILABILITY TABS ====================
+    async function showActivityModal(activityId = null) {
+      let activity = { title: '', description: '', price: '', currency: 'DZD', category: 'circuits', cityId: 'alger', duration: '2h', status: 'draft', images: [], includes: [], excludes: [], tags: [] };
+      
+      if (activityId) {
+        try {
+          const data = await apiRequest(`/activities/${activityId}`);
+          activity = data.activity;
+        } catch (e) {
+          alert('Erreur lors du chargement de l\'activité');
+          return;
+        }
+      }
+      
+      document.getElementById('modal-container').innerHTML = `
+        <div class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200 flex items-center justify-between">
+              <h3 class="text-xl font-semibold text-gray-800">${activityId ? 'Modifier l\'activité' : 'Nouvelle activité'}</h3>
+              <button onclick="closeModal()" class="p-2 hover:bg-gray-100 rounded-lg">
+                <i data-lucide="x" class="w-5 h-5 text-gray-500"></i>
+              </button>
+            </div>
+            ${activityId ? `
+              <div class="flex border-b border-gray-200">
+                <button class="tab-btn active" onclick="switchActivityTab('info', this)">Informations</button>
+                <button class="tab-btn" onclick="switchActivityTab('slots', this)">Disponibilités</button>
+              </div>
+            ` : ''}
+            <div id="activity-tab-info">
+              <form id="activity-form" class="p-6 space-y-4">
+                <input type="hidden" id="activity-id" value="${activityId || ''}">
+                
+                <div class="grid grid-cols-2 gap-4">
+                  <div class="col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Titre *</label>
+                    <input type="text" id="activity-title" class="input-field w-full" value="${activity.title}" required>
+                  </div>
+                  
+                  <div class="col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea id="activity-description" class="input-field w-full" rows="3">${activity.description || ''}</textarea>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Prix *</label>
+                    <input type="number" id="activity-price" class="input-field w-full" value="${activity.price}" required>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Devise</label>
+                    <select id="activity-currency" class="input-field w-full">
+                      <option value="DZD" ${activity.currency === 'DZD' ? 'selected' : ''}>DZD</option>
+                      <option value="AED" ${activity.currency === 'AED' ? 'selected' : ''}>AED</option>
+                      <option value="QAR" ${activity.currency === 'QAR' ? 'selected' : ''}>QAR</option>
+                      <option value="THB" ${activity.currency === 'THB' ? 'selected' : ''}>THB</option>
+                      <option value="MAD" ${activity.currency === 'MAD' ? 'selected' : ''}>MAD</option>
+                      <option value="EUR" ${activity.currency === 'EUR' ? 'selected' : ''}>EUR</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Catégorie *</label>
+                    <select id="activity-category" class="input-field w-full">
+                      <option value="circuits" ${activity.category === 'circuits' ? 'selected' : ''}>Circuits</option>
+                      <option value="location" ${activity.category === 'location' ? 'selected' : ''}>Location véhicules</option>
+                      <option value="plage" ${activity.category === 'plage' ? 'selected' : ''}>Plage & Mer</option>
+                      <option value="restaurant" ${activity.category === 'restaurant' ? 'selected' : ''}>Restaurants</option>
+                      <option value="nightlife" ${activity.category === 'nightlife' ? 'selected' : ''}>Vie nocturne</option>
+                      <option value="aventure" ${activity.category === 'aventure' ? 'selected' : ''}>Aventure</option>
+                      <option value="spa" ${activity.category === 'spa' ? 'selected' : ''}>Bien-être</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Ville *</label>
+                    <select id="activity-city" class="input-field w-full">
+                      <option value="alger" ${activity.cityId === 'alger' ? 'selected' : ''}>Alger</option>
+                      <option value="dubai" ${activity.cityId === 'dubai' ? 'selected' : ''}>Dubai</option>
+                      <option value="losangeles" ${activity.cityId === 'losangeles' ? 'selected' : ''}>Los Angeles</option>
+                      <option value="phuket" ${activity.cityId === 'phuket' ? 'selected' : ''}>Phuket</option>
+                      <option value="marrakech" ${activity.cityId === 'marrakech' ? 'selected' : ''}>Marrakech</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Durée</label>
+                    <input type="text" id="activity-duration" class="input-field w-full" value="${activity.duration || ''}" placeholder="Ex: 2h, Journée">
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Statut</label>
+                    <select id="activity-status" class="input-field w-full">
+                      <option value="draft" ${activity.status === 'draft' ? 'selected' : ''}>Brouillon</option>
+                      <option value="active" ${activity.status === 'active' ? 'selected' : ''}>Active</option>
+                      <option value="paused" ${activity.status === 'paused' ? 'selected' : ''}>En pause</option>
+                      <option value="archived" ${activity.status === 'archived' ? 'selected' : ''}>Archivée</option>
+                    </select>
+                  </div>
+                  
+                  <div class="col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Public cible</label>
+                    <p class="text-xs text-gray-500 mb-2">Permet de mieux recommander cette activité aux voyageurs</p>
+                    <div class="flex flex-wrap gap-3">
+                      <label class="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                        <input type="checkbox" id="tag-couple" class="rounded text-[#00D9C0]" ${(activity.tags || []).includes('couple') ? 'checked' : ''}>
+                        <i data-lucide="heart" class="w-4 h-4 text-pink-500"></i>
+                        <span class="text-sm text-gray-700">En couple</span>
+                      </label>
+                      <label class="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                        <input type="checkbox" id="tag-family" class="rounded text-[#00D9C0]" ${(activity.tags || []).includes('family') ? 'checked' : ''}>
+                        <i data-lucide="users" class="w-4 h-4 text-blue-500"></i>
+                        <span class="text-sm text-gray-700">En famille</span>
+                      </label>
+                      <label class="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                        <input type="checkbox" id="tag-friends" class="rounded text-[#00D9C0]" ${(activity.tags || []).includes('friends') ? 'checked' : ''}>
+                        <i data-lucide="smile" class="w-4 h-4 text-yellow-500"></i>
+                        <span class="text-sm text-gray-700">Entre amis</span>
+                      </label>
+                      <label class="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                        <input type="checkbox" id="tag-solo" class="rounded text-[#00D9C0]" ${(activity.tags || []).includes('solo') ? 'checked' : ''}>
+                        <i data-lucide="user" class="w-4 h-4 text-green-500"></i>
+                        <span class="text-sm text-gray-700">En solo</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="flex justify-end gap-3 pt-4 border-t">
+                  <button type="button" onclick="closeModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl">Annuler</button>
+                  <button type="submit" class="btn-primary px-6 py-2 rounded-xl font-medium">
+                    ${activityId ? 'Mettre à jour' : 'Créer'}
+                  </button>
+                </div>
+              </form>
+            </div>
+            <div id="activity-tab-slots" class="hidden p-6">
+              ${activityId ? '<div id="slots-content"><div class="text-center text-gray-400 py-4">Chargement...</div></div>' : '<div class="text-center text-gray-400 py-8"><i data-lucide="info" class="w-8 h-8 mx-auto mb-2 text-gray-300"></i><p>Enregistrez l\'activité d\'abord</p></div>'}
+            </div>
+          </div>
+        </div>
+      `;
+      
+      lucide.createIcons();
+      
+      document.getElementById('activity-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await saveActivity();
+      });
+
+      if (activityId) {
+        loadActivitySlots(activityId);
+      }
+    }
+
+    function switchActivityTab(tab, btnEl) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btnEl.classList.add('active');
+      document.getElementById('activity-tab-info').classList.toggle('hidden', tab !== 'info');
+      document.getElementById('activity-tab-slots').classList.toggle('hidden', tab !== 'slots');
+    }
+
+    // ==================== AVAILABILITY SLOTS ====================
+    let currentSlots = [];
+    const dayNames = { 1: 'Lundi', 2: 'Mardi', 3: 'Mercredi', 4: 'Jeudi', 5: 'Vendredi', 6: 'Samedi', 7: 'Dimanche' };
+
+    async function loadActivitySlots(activityId) {
+      try {
+        const data = await apiRequest(`/activities/${activityId}/slots`);
+        currentSlots = (data.slots || data || []).map(s => ({
+          dayOfWeek: s.dayOfWeek || s.day_of_week,
+          startTime: s.startTime || s.start_time,
+          endTime: s.endTime || s.end_time,
+          capacity: s.capacity
+        }));
+      } catch (e) {
+        currentSlots = [];
+      }
+      renderSlots(activityId);
+    }
+
+    function renderSlots(activityId) {
+      const container = document.getElementById('slots-content');
+      if (!container) return;
+
+      const grouped = {};
+      for (let d = 1; d <= 7; d++) grouped[d] = currentSlots.filter(s => s.dayOfWeek === d);
+
+      container.innerHTML = `
+        <div class="mb-6">
+          <h4 class="text-sm font-semibold text-gray-700 mb-3">Ajouter un créneau</h4>
+          <div class="grid grid-cols-4 gap-3">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Jour</label>
+              <select id="slot-day" class="input-field w-full text-sm">
+                ${Object.entries(dayNames).map(([k,v]) => `<option value="${k}">${v}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Début</label>
+              <input type="time" id="slot-start" class="input-field w-full text-sm" value="09:00">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Fin</label>
+              <input type="time" id="slot-end" class="input-field w-full text-sm" value="17:00">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Capacité</label>
+              <input type="number" id="slot-capacity" class="input-field w-full text-sm" value="10" min="1">
+            </div>
+          </div>
+          <button onclick="addSlot()" class="mt-3 btn-primary px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+            <i data-lucide="plus" class="w-4 h-4"></i> Ajouter
+          </button>
+        </div>
+        <div class="space-y-3">
+          ${Object.entries(grouped).filter(([,slots]) => slots.length > 0).map(([day, slots]) => `
+            <div class="bg-gray-50 rounded-xl p-4">
+              <h5 class="text-sm font-semibold text-gray-700 mb-2">${dayNames[day]}</h5>
+              <div class="space-y-2">
+                ${slots.map((s, idx) => {
+                  const globalIdx = currentSlots.indexOf(s);
+                  return `
+                    <div class="flex items-center justify-between bg-white rounded-lg px-3 py-2">
+                      <div class="flex items-center gap-4 text-sm text-gray-600">
+                        <span>${s.startTime} - ${s.endTime}</span>
+                        <span class="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">${s.capacity} places</span>
+                      </div>
+                      <button onclick="removeSlot(${globalIdx},'${activityId}')" class="p-1 hover:bg-red-50 rounded" title="Supprimer">
+                        <i data-lucide="trash-2" class="w-4 h-4 text-red-400"></i>
+                      </button>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          `).join('')}
+          ${currentSlots.length === 0 ? '<p class="text-center text-gray-400 text-sm py-4">Aucun créneau configuré</p>' : ''}
+        </div>
+        <div class="flex justify-end mt-4 pt-4 border-t">
+          <button onclick="saveSlots('${activityId}')" class="btn-primary px-6 py-2 rounded-xl font-medium flex items-center gap-2">
+            <i data-lucide="save" class="w-4 h-4"></i> Enregistrer les créneaux
+          </button>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    function addSlot() {
+      const activityId = document.getElementById('activity-id').value;
+      const dayOfWeek = parseInt(document.getElementById('slot-day').value);
+      const startTime = document.getElementById('slot-start').value;
+      const endTime = document.getElementById('slot-end').value;
+      const capacity = parseInt(document.getElementById('slot-capacity').value) || 10;
+
+      if (!startTime || !endTime) {
+        alert('Veuillez remplir les heures de début et de fin.');
+        return;
+      }
+
+      currentSlots.push({ dayOfWeek, startTime, endTime, capacity });
+      renderSlots(activityId);
+    }
+
+    function removeSlot(index, activityId) {
+      currentSlots.splice(index, 1);
+      renderSlots(activityId);
+    }
+
+    async function saveSlots(activityId) {
+      try {
+        await apiRequest(`/activities/${activityId}/slots`, {
+          method: 'PUT',
+          body: JSON.stringify({ slots: currentSlots })
+        });
+        alert('Créneaux enregistrés avec succès !');
+      } catch (error) {
+        alert('Erreur: ' + error.message);
+      }
+    }
+
+    // ==================== ACTIVITY CRUD ====================
+    async function saveActivity() {
+      const id = document.getElementById('activity-id').value;
+      
+      const tags = [];
+      if (document.getElementById('tag-couple')?.checked) tags.push('couple');
+      if (document.getElementById('tag-family')?.checked) tags.push('family');
+      if (document.getElementById('tag-friends')?.checked) tags.push('friends');
+      if (document.getElementById('tag-solo')?.checked) tags.push('solo');
+      
+      const data = {
+        title: document.getElementById('activity-title').value,
+        description: document.getElementById('activity-description').value,
+        price: parseFloat(document.getElementById('activity-price').value),
+        currency: document.getElementById('activity-currency').value,
+        category: document.getElementById('activity-category').value,
+        cityId: document.getElementById('activity-city').value,
+        duration: document.getElementById('activity-duration').value,
+        status: document.getElementById('activity-status').value,
+        tags: tags,
+      };
+      
+      try {
+        if (id) {
+          await apiRequest(`/activities/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+        } else {
+          await apiRequest('/activities', { method: 'POST', body: JSON.stringify(data) });
+        }
+        closeModal();
+        loadActivities();
+      } catch (error) {
+        alert('Erreur: ' + error.message);
+      }
+    }
+
+    async function toggleActivityStatus(id, currentStatus) {
+      const newStatus = currentStatus === 'active' ? 'paused' : 'active';
+      try {
+        await apiRequest(`/activities/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: newStatus }) });
+        loadActivities();
+      } catch (error) {
+        alert('Erreur: ' + error.message);
+      }
+    }
+
+    async function deleteActivity(id) {
+      if (!confirm('Êtes-vous sûr de vouloir supprimer cette activité ?')) return;
+      try {
+        await apiRequest(`/activities/${id}`, { method: 'DELETE' });
+        loadActivities();
+      } catch (error) {
+        alert('Erreur: ' + error.message);
+      }
+    }
+
+    async function updateBooking(id, status) {
+      try {
+        await apiRequest(`/operator/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
+        loadBookings();
+      } catch (error) {
+        alert('Erreur: ' + error.message);
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('modal-container').innerHTML = '';
+    }
+
+    // ==================== UTILITIES ====================
+    function formatCurrency(amount) {
+      return new Intl.NumberFormat('fr-FR').format(amount || 0);
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '-';
+      return new Date(dateStr).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    function translateStatus(status) {
+      const map = { confirmed: 'Confirmée', pending: 'En attente', completed: 'Terminée', cancelled: 'Annulée', refused: 'Refusée' };
+      return map[status] || status;
+    }
+
+    function translateActivityStatus(status) {
+      const map = { active: 'Active', paused: 'En pause', draft: 'Brouillon', archived: 'Archivée' };
+      return map[status] || status;
+    }
+
+    // ==================== EVENT LISTENERS ====================
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+      const errorEl = document.getElementById('login-error');
+      
+      try {
+        errorEl.classList.add('hidden');
+        await login(email, password);
+      } catch (error) {
+        errorEl.textContent = error.message;
+        errorEl.classList.remove('hidden');
+      }
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', logout);
+    document.getElementById('refresh-btn').addEventListener('click', () => navigateTo(window.location.hash || '#dashboard'));
+
+    window.addEventListener('hashchange', () => {
+      if (currentOperator) navigateTo(window.location.hash);
+    });
+
+    checkSession();
+  </script>
+</body>
+</html>

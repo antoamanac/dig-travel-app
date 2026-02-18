@@ -1,0 +1,225 @@
+Crée une application mobile de réservation d'activités touristiques appelée DIG TRAVEL.
+
+STACK TECHNIQUE :
+- React Native avec Expo
+- React Navigation pour la navigation
+- AsyncStorage pour stocker la ville sélectionnée
+- Données mockées pour l'instant (on connectera Supabase après)
+
+DESIGN SYSTEM :
+- Couleur primaire : #1a1a2e (bleu foncé)
+- Couleur secondaire : #f39c12 (orange)
+- Couleur background : #f5f5f5 (gris très clair)
+- Police : System (SF Pro pour iOS, Roboto pour Android)
+- Style : Moderne, épuré, photos grandes, beaucoup d'espace blanc
+
+NAVIGATION :
+Stack Navigator avec 5 écrans principaux
+
+---
+
+ÉCRAN 1 - SPLASH SCREEN (SplashScreen.js)
+Durée : 2 secondes puis auto-navigation vers CitySelector
+
+Layout :
+- Background dégradé du bleu foncé (#1a1a2e) vers bleu moyen (#2d3561)
+- Centré verticalement et horizontalement :
+  - Logo texte "DIG TRAVEL" en blanc, très gros (32px), bold
+  - Sous le logo : "✈️" emoji avion
+  - En dessous : slogan "Découvre les meilleures expériences locales" (16px, blanc semi-transparent)
+- En bas de l'écran : petit loader/spinner blanc
+
+Animation : Fade in doux au chargement
+
+---
+
+ÉCRAN 2 - SÉLECTION VILLE (CitySelector.js)
+
+Header :
+- Titre "Où vas-tu ?" centré, gros (28px), bleu foncé
+- Sous-titre "Choisis ta destination" (14px, gris)
+
+Liste des villes (5 cards verticales avec scroll) :
+Chaque card = 100% largeur, hauteur 120px, margin bottom 15px
+
+Card structure :
+- Photo de fond de la ville (avec overlay sombre 40%)
+- En overlay, aligné à gauche :
+  - Drapeau emoji + Nom ville (24px, blanc, bold)
+  - Petit texte "X activités disponibles" (12px, blanc semi-transparent)
+- Ombre portée subtile
+- Border radius 12px
+- Au tap : stocke ville + navigate vers CityLanding
+
+VILLES À CRÉER :
+1. 🇩🇿 Alger - 28 activités - Photo: ville blanche + mer
+2. 🇦🇪 Dubai - 45 activités - Photo: Burj Khalifa
+3. 🇶🇦 Doha - 18 activités - Photo: skyline moderne
+4. 🇹🇭 Phuket - 52 activités - Photo: plage + bateau
+5. 🇲🇦 Marrakech - 31 activités - Photo: médina
+
+Photos : utilise des URLs Unsplash pour chaque ville
+
+---
+
+ÉCRAN 3 - LANDING VILLE (CityLanding.js)
+
+Récupère la ville sélectionnée depuis navigation params
+
+Hero section (1/3 haut écran) :
+- Grande photo ville en background (height 280px)
+- Overlay dégradé noir transparent → noir 60% (bottom)
+- En overlay, en bas :
+  - "Bienvenue à [VILLE]" (28px, blanc, bold)
+  - Petit texte "Propulsé par [NOM_OPÉRATEUR]" (14px, blanc)
+
+DONNÉES OPÉRATEURS MOCKÉES :
+- Alger → VIP PLATINIUM
+- Dubai → VIP PLATINIUM  
+- Doha → VIP PLATINIUM
+- Phuket → Phuket For You
+- Marrakech → Marrakech Experiences
+
+Card info opérateur (juste sous hero) :
+- Background blanc, padding 20px, border radius 16px, shadow
+- Logo placeholder circulaire (80px) à gauche
+- À droite du logo :
+  - Nom opérateur (18px, bold)
+  - ⭐ 4.9 (127 avis) (14px)
+  - ✓ Vérifié DIG TRAVEL (12px, vert)
+
+Section "Catégories" :
+Scroll horizontal de 5 chips :
+- 🏖️ Plage & Mer
+- 🍽️ Restaurants
+- 🎉 Vie nocturne
+- 🏃 Aventure
+- 🧘 Bien-être
+
+Chips design : background blanc, border orange 2px, border radius 20px, padding 10px 20px
+
+Section "Activités populaires" :
+Grid 2 colonnes d'activités cards
+
+Gros bouton orange en bas (fixed) :
+"Voir toutes les activités →"
+Au tap → navigate ActivityList
+
+---
+
+ÉCRAN 4 - LISTE ACTIVITÉS (ActivityList.js)
+
+Header avec retour :
+- Flèche retour ←
+- Titre "[VILLE] - Activités"
+- Icône filtre à droite
+
+Filtres (scroll horizontal sous header) :
+- Tous (sélectionné par défaut, orange)
+- Plage, Restaurant, Aventure, Spa (gris)
+
+Liste activités (2 colonnes, grid) :
+
+CRÉER 6 ACTIVITÉS MOCKÉES pour chaque ville, exemple Alger :
+1. Jet Ski 30min - 1,200 DZD - ⭐ 4.8 - Catégorie: Plage
+2. Restaurant Le Bardo VIP - 8,000 DZD - ⭐ 5.0 - Catégorie: Restaurant
+3. Plage privée Club des Pins - 3,500 DZD - ⭐ 4.9 - Catégorie: Plage
+4. Excursion Tipaza - 5,000 DZD - ⭐ 4.7 - Catégorie: Aventure
+5. Hammam & Spa traditionnel - 4,200 DZD - ⭐ 4.8 - Catégorie: Spa
+6. Dîner sur yacht - 15,000 DZD - ⭐ 5.0 - Catégorie: Restaurant
+
+Card activité :
+- Photo (ratio 4:3)
+- Padding 8px
+- Titre (2 lignes max, ellipsis)
+- Prix en gros (orange, bold)
+- Rating + nombre avis (petit, gris)
+- Badge catégorie en overlay sur photo (top right)
+- Badge "Par [OPÉRATEUR]" en bas (12px, gris)
+- Border radius 12px, shadow
+
+Au tap → navigate ActivityDetail avec params
+
+---
+
+ÉCRAN 5 - DÉTAIL ACTIVITÉ (ActivityDetail.js)
+
+Carousel photos en haut :
+- Scroll horizontal, 5 photos
+- Indicateurs dots en bas du carousel
+- Height 300px
+- Bouton retour ← en overlay (top left)
+
+Content scroll vertical :
+
+Section infos principales :
+- Titre activité (24px, bold, bleu foncé)
+- Rating ⭐ 4.8 (34 avis) - cliquable
+- Prix en GROS (32px, orange, bold) + "/personne"
+- Badge "Par VIP PLATINIUM" avec mini logo
+
+Section "À propos" :
+- Titre section (16px, bold)
+- Description texte (14px, line height 1.6)
+Exemple : "Profitez d'une session inoubliable de jet ski sur les magnifiques plages du Club des Pins. Équipement professionnel et moniteur certifié inclus."
+
+Section "Inclus" (background vert très clair) :
+- ✓ Équipement complet
+- ✓ Assurance
+- ✓ Photos souvenir
+- ✓ Vestiaires
+
+Section "Non inclus" (background rouge très clair) :
+- ✗ Transport (disponible +500 DZD)
+- ✗ Repas
+
+Section "Choisir une date" :
+- Calendar icon + "Sélectionner la date"
+- Au tap → ouvre date picker modal
+- Affiche date sélectionnée
+
+Bouton fixe en bas (full width, orange, 50px height) :
+"Réserver maintenant - 1,200 DZD"
+Au tap → navigate vers BookingForm
+
+---
+
+ÉCRAN BONUS - FORMULAIRE RÉSERVATION (BookingForm.js)
+
+Header : "Finaliser la réservation"
+
+Récap activité (card gris clair) :
+- Mini photo + titre + date + prix
+
+Formulaire :
+- Input "Nom complet" (required)
+- Input "Email" (required, type email)
+- Input "Téléphone" (required, type phone)
+
+Section "Mode de paiement" :
+2 options radio :
+( ) Payer maintenant par carte
+( ) Payer en cash sur place
+
+Bouton orange "Confirmer la réservation"
+
+Au tap → pour l'instant juste alert "Réservation confirmée ! (Paiement Stripe à venir)"
+
+---
+
+DONNÉES MOCKÉES :
+Créer un fichier data.js avec :
+- Liste des villes avec photos Unsplash
+- Opérateurs par ville
+- 6 activités par ville avec photos Unsplash (plage, sports, restaurants)
+
+NAVIGATION FLOW :
+Splash → CitySelector → CityLanding → ActivityList → ActivityDetail → BookingForm
+
+COMPOSANTS RÉUTILISABLES À CRÉER :
+- ActivityCard (pour grid)
+- Button (primaire orange, secondaire blanc)
+- Header (avec retour)
+
+Génère une app complète, fonctionnelle, avec navigation qui marche entre tous les écrans.
+Utilise des vraies photos Unsplash pour que ce soit beau.

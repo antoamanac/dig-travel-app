@@ -1,0 +1,97 @@
+Modifier l’onboarding “MyPlanner IA” pour implémenter LA V2 “DIG PILOT” (UX premium, rapide). Ne refactor pas tout le projet, ne change pas l’architecture globale. Fais des changements ciblés.
+
+# Objectif
+Remplacer l’onboarding actuel par ce flow final (ordre strict), avec écrans optionnels skippables, et conservation des données entre écrans.
+
+# Naming (strict)
+- Remplacer "MyPlanner IA" par "DIG PILOT" partout dans l’UI.
+- Le terme IA peut apparaître uniquement dans du micro-texte si nécessaire, mais pas dans le nom principal.
+
+# Flow final à implémenter (V2)
+(1) Écran Welcome (Alger)
+- 2 cartes cliquables:
+  A) "🧭 MODE LIBRE" — "Explorez à votre rythme"
+  B) "✈️ DIG PILOT" — "On s’occupe de tout en 2 min" + badge "✨ RECOMMANDÉ"
+- Au clic sur DIG PILOT: 
+  - si first-time => ouvrir une modal d’explication
+  - sinon => aller direct à l’écran Dates+Personnes + toast discret "DIG PILOT activé ✈️"
+
+(1.1) Modal “DIG PILOT” (uniquement 1ère fois)
+Titre: "✈️ DIG PILOT va créer votre planning parfait"
+Bullets:
+- 🗓️ Organiser votre séjour jour par jour
+- ⏰ Optimiser vos trajets (zéro temps perdu)
+- 💰 Respecter votre budget
+- 🎯 Sélectionner uniquement ce qui VOUS plaît
+Footer: "⏱️ Ça prend 2 minutes."
+CTA: "C’est parti 🚀"
+=> Stocker pilotSeen=true en local (persistant).
+
+(2) Écran Dates + Personnes (fusion)
+- startDate / endDate
+- Adults stepper (min 1)
+- Children stepper (min 0)
+- Si children > 0 => demander age groups: 0–3, 4–10, 11+ (simple chips)
+- Afficher résumé: "X jours à Alger" calculé
+
+(3) Écran Contexte émotionnel (SKIPPABLE)
+- Bouton "Passer" visible en haut à droite
+- Titre: "🎭 Avec qui partez-vous ?"
+- Sous-titre: "Optionnel – pour affiner votre voyage"
+- 4 choix: Couple / Famille / Entre amis / Solo
+
+(4) Écran Préférences (un seul écran, pas chargé)
+Bloc A: Rythme (single): Relax / Équilibré (⭐) / Intense
+Bloc B: Centres d’intérêt (multi, max 5): Culture, Nature, Mer & aventure, Gastronomie, Bien-être, Shopping, Hors des sentiers battus (⭐)
+
+(5) Écran Budget
+Single: Économique (~50–80€/jour), Modéré (⭐ ~80–150), Confort (~150–300)
+Texte: "🔒 Votre budget est privé" + "💡 DIG PILOT n’ira jamais au-delà"
+
+(6) Écran Transport (OPTIONNEL + SKIPPABLE)
+Options single: SELF / CAR_RENTAL / DRIVER / UNSURE
+CTA: "Générer mon planning ✨"
+
+(7) Écran Loading "wow" (6–8s max)
+Titre: "✈️ DIG PILOT prépare votre voyage…"
+Étapes progressives (animation):
+- Analyse des activités… => ✅ 247 activités analysées
+- Sélection… => ✅ 12 expériences sélectionnées
+- Optimisation… => ✅ 3,2 km économisés
+- Vérification budget… => ✅ Budget OK (dans votre limite ✓)
+- Ajout spots locaux… => ✅ 2 lieux hors radar 🤫
+- 🎉 Votre séjour est prêt !
+Bouton: "Voir mon planning →"
+
+(8) Écran Planning (MVP)
+- Afficher un planning mock + résumé des choix utilisateur
+- Ajouter 3 chips:
+  "😌 Plus relax" / "🔥 Plus intense" / "💰 Moins cher"
+- Les chips peuvent pour l’instant juste log/recalculer un mock.
+
+# Data model (à construire ou adapter)
+Créer/adapter un objet unique "TripPlanRequest" maintenu à travers l’onboarding:
+{
+  destination: "Alger",
+  mode: "FREE"|"PILOT",
+  startDate, endDate, durationDays,
+  travelers: { adults, children, childrenAgeGroups: string[] },
+  context: "COUPLE"|"FAMILY"|"FRIENDS"|"SOLO"|null,
+  pace: "RELAX"|"BALANCED"|"INTENSE",
+  interests: string[],
+  avoid: { crowds, tooMuchWalking, earlyWakeups, dietary },
+  budgetTier: "ECONOMY"|"MODERATE"|"COMFORT",
+  transport: "SELF"|"CAR_RENTAL"|"DRIVER"|"UNSURE"|null
+}
+
+# Contraintes UX
+- Tous les écrans optionnels: bouton "Passer" en haut à droite (cohérent partout)
+- Navigation back conserve les valeurs saisies
+- Sauvegarder un draft local (si l’app se ferme, on reprend)
+- Ne pas introduire de scroll lourd: max 2 blocs par écran
+
+# Instrumentation
+Ajouter des events (selon le système analytics existant, sinon console):
+onboarding_start, select_mode_free, select_mode_pilot, pilot_modal_shown,
+dates_people_done, context_skipped/selected, prefs_done, avoid_skipped/done,
+budget_selected, transport_skipped/selected, generate_clicked, planning_viewed.
