@@ -46,8 +46,8 @@ const CARD_WIDTH = SCREEN_WIDTH - 48;
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-const modeLibreImage = require("@/assets/images/mode-libre.png");
-const modePilotImage = require("@/assets/images/mode-pilot.png");
+const modeLibreImage = require("../assets/images/mode-libre.png");
+const modePilotImage = require("../assets/images/mode-pilot.png");
 
 export default function ModeSelectionScreen() {
   const navigation = useNavigation<NavigationProp>();
