@@ -277,7 +277,7 @@ export default function BookingFormScreen() {
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: insets.bottom + 100 },
+          { paddingBottom: Math.max(insets.bottom, 34) + 120 },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -424,7 +424,7 @@ export default function BookingFormScreen() {
       </KeyboardAwareScrollViewCompat>
 
       <Animated.View 
-        style={[styles.bottomContainer, { paddingBottom: insets.bottom + Spacing.md, backgroundColor: ct.background }]}
+        style={[styles.bottomContainer, { paddingBottom: Math.max(insets.bottom, 34) + Spacing.md, backgroundColor: ct.background }]}
         entering={FadeInUp.delay(500).duration(400).springify()}
       >
         <ConfirmButton onPress={handleConfirmBooking} isLoading={isSubmitting} ct={ct} />
