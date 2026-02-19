@@ -201,6 +201,70 @@ export async function updateProfile(req: Request, res: Response) {
   }
 }
 
+export async function appleSignIn(req: Request, res: Response) {
+  try {
+    const { appleUserId, email, fullName } = req.body;
+
+    if (!appleUserId) {
+      return res.status(400).json({ error: "Apple User ID requis" });
+    }
+
+    const existingUser = await query(
+      "SELECT id, email, full_name, phone, avatar_url, created_at FROM users WHERE apple_user_id = $1",
+      [appleUserId]
+    );
+
+    let user;
+
+    if (existingUser.rows.length > 0) {
+      user = existingUser.rows[0];
+    } else {
+      const userEmail = email || `apple_${appleUserId.substring(0, 8)}@digtravel.app`;
+
+      const emailCheck = await query("SELECT id FROM users WHERE email = $1", [userEmail.toLowerCase()]);
+      if (emailCheck.rows.length > 0) {
+        const updateResult = await query(
+          "UPDATE users SET apple_user_id = $1 WHERE email = $2 RETURNING id, email, full_name, phone, avatar_url, created_at",
+          [appleUserId, userEmail.toLowerCase()]
+        );
+        user = updateResult.rows[0];
+      } else {
+        const dummyHash = await hashPassword(crypto.randomBytes(32).toString("hex"));
+        const result = await query(
+          "INSERT INTO users (email, password_hash, full_name, apple_user_id) VALUES ($1, $2, $3, $4) RETURNING id, email, full_name, phone, avatar_url, created_at",
+          [userEmail.toLowerCase(), dummyHash, fullName || null, appleUserId]
+        );
+        user = result.rows[0];
+      }
+    }
+
+    const token = generateToken();
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+    await query("DELETE FROM sessions WHERE user_id = $1", [user.id]);
+    await query(
+      "INSERT INTO sessions (user_id, token, expires_at) VALUES ($1, $2, $3)",
+      [user.id, token, expiresAt]
+    );
+
+    res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        full_name: user.full_name,
+        phone: user.phone,
+        avatar_url: user.avatar_url,
+        created_at: user.created_at,
+      },
+      token,
+      expiresAt: expiresAt.toISOString(),
+    });
+  } catch (error: any) {
+    console.error("Apple Sign-In error:", error);
+    res.status(500).json({ error: "Erreur lors de la connexion avec Apple" });
+  }
+}
+
 export function authMiddleware(req: Request, res: Response, next: NextFunction) {
   const token = req.headers.authorization?.replace("Bearer ", "");
   if (!token) {
