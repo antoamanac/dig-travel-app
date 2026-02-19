@@ -99,12 +99,7 @@ export default function SignupScreen() {
           : error.message
       );
     } else {
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: "CitySelector" }],
-        })
-      );
+      navigation.goBack();
     }
   };
 
