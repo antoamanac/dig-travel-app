@@ -20,6 +20,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import * as AppleAuthentication from "expo-apple-authentication";
 
 import { ThemedText } from "@/components/ThemedText";
 import { AppColors, Spacing } from "@/constants/theme";
@@ -35,7 +36,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 export default function LoginScreen() {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
-  const { signIn, isOperator } = useAuth();
+  const { signIn, signInWithApple, isOperator } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -105,8 +106,48 @@ export default function LoginScreen() {
     buttonScale.value = withSpring(1);
   };
 
-  const handleAppleSignIn = () => {
-    Alert.alert("Connexion Apple", "Fonctionnalité bientôt disponible. Utilisez Expo Go sur un appareil iOS pour vous connecter avec Apple.");
+  const handleAppleSignIn = async () => {
+    if (Platform.OS !== "ios") {
+      Alert.alert("Non disponible", "La connexion Apple est uniquement disponible sur iOS.");
+      return;
+    }
+
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      const fullName = credential.fullName
+        ? [credential.fullName.givenName, credential.fullName.familyName].filter(Boolean).join(" ") || null
+        : null;
+
+      setIsLoading(true);
+      const { error } = await signInWithApple(
+        credential.user,
+        credential.email,
+        fullName
+      );
+      setIsLoading(false);
+
+      if (error) {
+        Alert.alert("Erreur", error.message);
+      } else {
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: "CitySelector" }],
+          })
+        );
+      }
+    } catch (e: any) {
+      setIsLoading(false);
+      if (e.code !== "ERR_REQUEST_CANCELED") {
+        Alert.alert("Erreur", "Impossible de se connecter avec Apple.");
+      }
+    }
   };
 
   const handleClose = () => {
@@ -230,12 +271,22 @@ export default function LoginScreen() {
             <View style={styles.dividerLine} />
           </View>
 
-          <Pressable style={[styles.socialButton, styles.appleButton]} onPress={handleAppleSignIn}>
-            <View style={styles.appleIconContainer}>
-              <ThemedText style={styles.appleLogo}>{"\uF8FF"}</ThemedText>
-            </View>
-            <ThemedText style={styles.appleButtonText}>Continuer avec Apple</ThemedText>
-          </Pressable>
+          {Platform.OS === "ios" ? (
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+              cornerRadius={14}
+              style={styles.appleAuthButton}
+              onPress={handleAppleSignIn}
+            />
+          ) : (
+            <Pressable style={[styles.socialButton, styles.appleButton]} onPress={handleAppleSignIn}>
+              <View style={styles.appleIconContainer}>
+                <ThemedText style={styles.appleLogo}>{"\uF8FF"}</ThemedText>
+              </View>
+              <ThemedText style={styles.appleButtonText}>Continuer avec Apple</ThemedText>
+            </Pressable>
+          )}
         </Animated.View>
 
         <Animated.View
@@ -399,6 +450,10 @@ const styles = StyleSheet.create({
   appleButton: {
     marginBottom: 0,
     backgroundColor: AppColors.white,
+  },
+  appleAuthButton: {
+    width: "100%",
+    height: 54,
   },
   socialIconContainer: {
     marginRight: Spacing.md,
