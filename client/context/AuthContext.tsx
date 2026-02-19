@@ -31,6 +31,7 @@ interface AuthContextType {
   isGuest: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null; isOperator?: boolean }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
+  signInWithApple: (appleUserId: string, email: string | null, fullName: string | null) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
   refreshProfile: () => Promise<void>;
@@ -198,6 +199,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signInWithApple = async (appleUserId: string, email: string | null, fullName: string | null) => {
+    try {
+      const response = await fetch(new URL("/api/auth/apple", getApiUrl()).toString(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ appleUserId, email, fullName }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { error: new Error(data.error || "Erreur de connexion Apple") };
+      }
+
+      await AsyncStorage.setItem(TOKEN_KEY, data.token);
+      await AsyncStorage.removeItem(GUEST_KEY);
+      await AsyncStorage.removeItem(OPERATOR_TOKEN_KEY);
+      setToken(data.token);
+      setProfile(data.user);
+      setOperatorProfile(null);
+      setIsOperator(false);
+      setIsGuest(false);
+
+      return { error: null };
+    } catch (error: any) {
+      return { error: new Error(error.message || "Erreur de connexion Apple") };
+    }
+  };
+
   const signOut = async () => {
     try {
       if (token) {
@@ -260,6 +290,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isGuest,
         signIn,
         signUp,
+        signInWithApple,
         signOut,
         updateProfile,
         refreshProfile,
