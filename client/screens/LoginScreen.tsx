@@ -89,12 +89,7 @@ export default function LoginScreen() {
         })
       );
     } else {
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: "CitySelector" }],
-        })
-      );
+      navigation.goBack();
     }
   };
 
@@ -135,12 +130,7 @@ export default function LoginScreen() {
       if (error) {
         Alert.alert("Erreur", error.message);
       } else {
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: "CitySelector" }],
-          })
-        );
+        navigation.goBack();
       }
     } catch (e: any) {
       setIsLoading(false);
