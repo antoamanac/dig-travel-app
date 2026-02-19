@@ -136,13 +136,13 @@ export async function createBooking(req: Request, res: Response) {
     const result = await query(
       `INSERT INTO bookings (
         user_id, activity_id, operator_id, legacy_activity_id, city_id, activity_title, activity_image,
-        scheduled_at, time_slot, price_per_person, total_price, currency, status, qr_code,
+        scheduled_at, time_slot, price, price_per_person, total_price, currency, status, qr_code,
         customer_name, customer_email, customer_phone, payment_method, payment_status, num_people
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
       RETURNING *`,
       [
         userId, dbActivityId, operatorId, isUUID ? null : activity_id, city_id, activity_title, activity_image,
-        scheduled_at, time_slot || null, price, totalPrice, currency, status || 'confirmed', qr_code,
+        scheduled_at, time_slot || null, price, price, totalPrice, currency, status || 'confirmed', qr_code,
         customer_name, customer_email, customer_phone, payment_method, payment_status || 'pending', num_people
       ]
     );
