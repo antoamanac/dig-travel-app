@@ -15,6 +15,7 @@ export async function initDatabase() {
         full_name TEXT,
         phone TEXT,
         avatar_url TEXT,
+        apple_user_id TEXT UNIQUE,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       );
