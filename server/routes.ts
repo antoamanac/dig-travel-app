@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { initDatabase } from "./db";
-import { register, login, logout, getSession, updateProfile } from "./auth";
+import { register, login, logout, getSession, updateProfile, appleSignIn } from "./auth";
 import { getBookings, createBooking, getOperatorBookings, updateBookingStatus } from "./bookings";
 import { operatorLogin, operatorLogout, getOperatorSession, operatorAuthMiddleware, createOperator } from "./operator-auth";
 import { getActivities, getActivity, createActivity, updateActivity, deleteActivity, toggleActivityStatus } from "./activities";
@@ -20,6 +20,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.post("/api/auth/logout", logout);
   app.get("/api/auth/session", getSession);
   app.put("/api/auth/profile", updateProfile);
+  app.post("/api/auth/apple", appleSignIn);
 
   app.get("/api/bookings", getBookings);
   app.post("/api/bookings", createBooking);
